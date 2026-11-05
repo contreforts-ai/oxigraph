@@ -1668,6 +1668,7 @@ dependencies = [
  "libc",
  "oxhttp",
  "oxiri",
+ "oxkv",
  "oxrdf",
  "oxrdfio",
  "oxrocksdb-sys",
@@ -1770,6 +1771,10 @@ dependencies = [
  "thiserror 2.0.21",
  "tokio",
 ]
+
+[[package]]
+name = "oxkv"
+version = "0.1.0-dev"
 
 [[package]]
 name = "oxrdf"

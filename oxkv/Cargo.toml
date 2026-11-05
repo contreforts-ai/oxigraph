@@ -1,0 +1,15 @@
+[package]
+name = "oxkv"
+version = "0.1.0-dev"
+authors = ["Contreforts"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+description = "Pure-Rust key-value storage backend for Oxigraph (placeholder: API contract only)."
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+
+[lints]
+workspace = true

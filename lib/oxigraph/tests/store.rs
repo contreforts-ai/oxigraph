@@ -547,6 +547,10 @@ fn test_backup_on_in_memory() -> Result<(), Box<dyn Error>> {
     target_endian = "little",
     feature = "rocksdb"
 ))]
+#[cfg_attr(
+    feature = "oxkv",
+    ignore = "the fixture is in RocksDB's on-disk format"
+)]
 fn test_backward_compatibility() -> Result<(), Box<dyn Error>> {
     // We run twice to check if data is properly saved and closed
     let _reset = DirSaver::new("tests/rocksdb_bc_data")?;

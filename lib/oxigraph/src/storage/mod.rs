@@ -27,8 +27,23 @@ mod memory;
 pub mod numeric_encoder;
 #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
 mod rocksdb;
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(
+    not(target_family = "wasm"),
+    feature = "rocksdb-cpp",
+    not(feature = "oxkv")
+))]
 mod rocksdb_wrapper;
+#[cfg(all(not(target_family = "wasm"), feature = "oxkv"))]
+#[path = "oxkv_wrapper.rs"]
+mod rocksdb_wrapper;
+#[cfg(all(
+    not(target_family = "wasm"),
+    feature = "rocksdb",
+    not(any(feature = "rocksdb-cpp", feature = "oxkv"))
+))]
+compile_error!(
+    "The \"rocksdb\" feature needs a storage backend: enable \"rocksdb-cpp\" (RocksDB) or \"oxkv\" (pure Rust)"
+);
 pub mod small_string;
 
 pub const DEFAULT_BULK_LOAD_BATCH_SIZE: usize = 1_000_000;
