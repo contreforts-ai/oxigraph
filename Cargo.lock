@@ -1668,7 +1668,7 @@ dependencies = [
  "libc",
  "oxhttp",
  "oxiri",
- "oxkv",
+ "oxnative",
  "oxrdf",
  "oxrdfio",
  "oxrocksdb-sys",
@@ -1773,8 +1773,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "oxkv"
+name = "oxnative"
 version = "0.1.0-dev"
+source = "git+https://github.com/ds-labs-org/oxnative?branch=main#2dbee966bc3239ffadfc26eb1bf6bebef1aa2d17"
 
 [[package]]
 name = "oxrdf"

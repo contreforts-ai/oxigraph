@@ -1,32 +1,32 @@
-//! Adapter that plugs the pure-Rust [`oxkv`] engine in place of
-//! `rocksdb_wrapper.rs` (selected by the `oxkv` feature).
+//! Adapter that plugs the pure-Rust [`oxnative`] engine in place of
+//! `rocksdb_wrapper.rs` (selected by the `oxnative` feature).
 //!
-//! `oxkv` exposes the same API as `rocksdb_wrapper.rs` but cannot name
+//! `oxnative` exposes the same API as `rocksdb_wrapper.rs` but cannot name
 //! Oxigraph's error types. The types returning a `Result` are wrapped here to
-//! convert [`oxkv::KvError`] into [`StorageError`], so that `rocksdb.rs` works
+//! convert [`oxnative::KvError`] into [`StorageError`], so that `rocksdb.rs` works
 //! unchanged with either backend.
 
 use crate::storage::error::{CorruptionError, StorageError};
-pub use oxkv::{ColumnFamily, ColumnFamilyDefinition, DbOptions, PinnableSlice};
+pub use oxnative::{ColumnFamily, ColumnFamilyDefinition, DbOptions, PinnableSlice};
 use std::path::{Path, PathBuf};
 
-impl From<oxkv::KvError> for StorageError {
+impl From<oxnative::KvError> for StorageError {
     #[inline]
-    fn from(error: oxkv::KvError) -> Self {
+    fn from(error: oxnative::KvError) -> Self {
         match error {
-            oxkv::KvError::Io(e) => Self::Io(e),
-            oxkv::KvError::Corruption(e) => Self::Corruption(CorruptionError::new(e)),
-            oxkv::KvError::MissingColumnFamily(name) => {
+            oxnative::KvError::Io(e) => Self::Io(e),
+            oxnative::KvError::Corruption(e) => Self::Corruption(CorruptionError::new(e)),
+            oxnative::KvError::MissingColumnFamily(name) => {
                 Self::Corruption(CorruptionError::from_missing_column_family_name(name))
             }
-            oxkv::KvError::Other(e) => Self::Other(e),
+            oxnative::KvError::Other(e) => Self::Other(e),
             e => Self::Other(Box::new(e)),
         }
     }
 }
 
 #[derive(Clone)]
-pub struct Db(oxkv::Db);
+pub struct Db(oxnative::Db);
 
 impl Db {
     pub fn open_read_write(
@@ -34,7 +34,7 @@ impl Db {
         column_families: Vec<ColumnFamilyDefinition>,
         db_options: DbOptions,
     ) -> Result<Self, StorageError> {
-        Ok(Self(oxkv::Db::open_read_write(
+        Ok(Self(oxnative::Db::open_read_write(
             path,
             column_families,
             db_options,
@@ -45,7 +45,7 @@ impl Db {
         path: &Path,
         column_families: Vec<ColumnFamilyDefinition>,
     ) -> Result<Self, StorageError> {
-        Ok(Self(oxkv::Db::open_read_only(path, column_families)?))
+        Ok(Self(oxnative::Db::open_read_only(path, column_families)?))
     }
 
     pub fn is_writable(&self) -> bool {
@@ -119,7 +119,7 @@ impl Db {
 }
 
 #[derive(Clone)]
-pub struct Reader<'a>(oxkv::Reader<'a>);
+pub struct Reader<'a>(oxnative::Reader<'a>);
 
 impl<'a> Reader<'a> {
     pub fn get(
@@ -156,7 +156,7 @@ impl<'a> Reader<'a> {
     }
 }
 
-pub struct Transaction(oxkv::Transaction);
+pub struct Transaction(oxnative::Transaction);
 
 impl Transaction {
     pub fn insert(&mut self, column_family: &ColumnFamily, key: &[u8], value: &[u8]) {
@@ -180,7 +180,7 @@ impl Transaction {
     }
 }
 
-pub struct ReadableTransaction<'a>(oxkv::ReadableTransaction<'a>);
+pub struct ReadableTransaction<'a>(oxnative::ReadableTransaction<'a>);
 
 impl ReadableTransaction<'_> {
     pub fn reader(&self) -> Reader<'_> {
@@ -204,7 +204,7 @@ impl ReadableTransaction<'_> {
     }
 }
 
-pub struct Iter<'a>(oxkv::Iter<'a>);
+pub struct Iter<'a>(oxnative::Iter<'a>);
 
 impl Iter<'_> {
     pub fn status(&self) -> Result<(), StorageError> {
@@ -220,7 +220,7 @@ impl Iter<'_> {
     }
 }
 
-pub struct SstFileWriter(oxkv::SstFileWriter);
+pub struct SstFileWriter(oxnative::SstFileWriter);
 
 impl SstFileWriter {
     pub fn insert(&mut self, key: &[u8], value: &[u8]) -> Result<(), StorageError> {

@@ -548,7 +548,7 @@ fn test_backup_on_in_memory() -> Result<(), Box<dyn Error>> {
     feature = "rocksdb"
 ))]
 #[cfg_attr(
-    feature = "oxkv",
+    feature = "oxnative",
     ignore = "the fixture is in RocksDB's on-disk format"
 )]
 fn test_backward_compatibility() -> Result<(), Box<dyn Error>> {

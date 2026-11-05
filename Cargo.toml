@@ -15,7 +15,6 @@ members = [
   "lib/spargeo",
   "lib/sparopt",
   "lib/sparql-smith",
-  "oxkv",
   "oxrocksdb-sys",
   "python",
   "testsuite",
@@ -85,13 +84,15 @@ wasm-bindgen = "0.2.121"
 wasm-bindgen-futures = "0.4.71"
 wkt = "0.14"
 
+# Pure-Rust storage backend, maintained in its own repository
+oxnative = { git = "https://github.com/ds-labs-org/oxnative", branch = "main" }
+
 # Internal dependencies
 oxigraph = { version = "=0.6.0-dev", path = "lib/oxigraph", default-features = false }
 oxjsonld = { version = "=0.3.0-dev", path = "lib/oxjsonld" }
 oxrdf = { version = "=0.4.0-dev", path = "lib/oxrdf" }
 oxrdfio = { version = "=0.3.0-dev", path = "lib/oxrdfio" }
 oxrdfxml = { version = "=0.3.0-dev", path = "lib/oxrdfxml" }
-oxkv = { version = "=0.1.0-dev", path = "./oxkv" }
 oxrocksdb-sys = { version = "=0.6.0-dev", path = "./oxrocksdb-sys" }
 oxsdatatypes = { version = "=0.3.0-dev", path = "lib/oxsdatatypes" }
 oxttl = { version = "=0.3.0-dev", path = "lib/oxttl" }

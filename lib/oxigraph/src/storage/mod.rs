@@ -30,19 +30,19 @@ mod rocksdb;
 #[cfg(all(
     not(target_family = "wasm"),
     feature = "rocksdb-cpp",
-    not(feature = "oxkv")
+    not(feature = "oxnative")
 ))]
 mod rocksdb_wrapper;
-#[cfg(all(not(target_family = "wasm"), feature = "oxkv"))]
-#[path = "oxkv_wrapper.rs"]
+#[cfg(all(not(target_family = "wasm"), feature = "oxnative"))]
+#[path = "oxnative_wrapper.rs"]
 mod rocksdb_wrapper;
 #[cfg(all(
     not(target_family = "wasm"),
     feature = "rocksdb",
-    not(any(feature = "rocksdb-cpp", feature = "oxkv"))
+    not(any(feature = "rocksdb-cpp", feature = "oxnative"))
 ))]
 compile_error!(
-    "The \"rocksdb\" feature needs a storage backend: enable \"rocksdb-cpp\" (RocksDB) or \"oxkv\" (pure Rust)"
+    "The \"rocksdb\" feature needs a storage backend: enable \"rocksdb-cpp\" (RocksDB) or \"oxnative\" (pure Rust)"
 );
 pub mod small_string;
 
