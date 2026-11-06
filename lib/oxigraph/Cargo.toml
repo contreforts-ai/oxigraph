@@ -14,19 +14,18 @@ edition.workspace = true
 rust-version.workspace = true
 
 [features]
-default = ["rocksdb", "rocksdb-cpp"]
-# On-disk storage (`Store::open` and friends). Needs one backend below.
-rocksdb = []
-# RocksDB backend (C++, through oxrocksdb-sys).
-rocksdb-cpp = ["rocksdb", "oxrocksdb-sys"]
-# Pure-Rust backend. Takes precedence over rocksdb-cpp when both are enabled.
-oxnative = ["rocksdb", "dep:oxnative"]
+default = ["rocksdb"]
+rocksdb = ["oxrocksdb-sys"]
+# Pure-Rust on-disk storage, in place of RocksDB. Takes precedence over
+# "rocksdb" when both are enabled. Either one enables on-disk storage
+# (`Store::open` and friends), see build.rs.
+oxnative = ["dep:oxnative"]
 js = ["getrandom/wasm_js", "oxsdatatypes/js", "js-sys"]
 http-client = ["oxhttp"]
 http-client-native-tls = ["http-client", "oxhttp/native-tls"]
 http-client-rustls-webpki = ["http-client", "oxhttp/rustls-ring-webpki"]
 http-client-rustls-native = ["http-client", "oxhttp/rustls-ring-native"]
-rocksdb-pkg-config = ["rocksdb-cpp", "oxrocksdb-sys/pkg-config"]
+rocksdb-pkg-config = ["oxrocksdb-sys/pkg-config"]
 rocksdb-debug = []
 rdf-12 = ["oxrdfio/rdf-12", "spareval/sparql-12"]
 geosparql = ["spareval/geosparql"]

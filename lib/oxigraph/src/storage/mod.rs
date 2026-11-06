@@ -7,7 +7,7 @@ use crate::storage::memory::{
 use crate::storage::numeric_encoder::{
     EncodedQuad, EncodedTerm, EncodedTriple, StrHash, StrLookup,
 };
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 use crate::storage::rocksdb::{
     RocksDbChainedDecodingQuadIterator, RocksDbDecodingGraphIterator, RocksDbStorage,
     RocksDbStorageBulkLoader, RocksDbStorageOptions, RocksDbStorageReadableTransaction,
@@ -15,47 +15,41 @@ use crate::storage::rocksdb::{
 };
 use oxstr::OxString;
 use rustc_hash::{FxBuildHasher, FxHashSet};
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 use std::path::Path;
 #[cfg(not(target_family = "wasm"))]
 use std::{io, thread};
 
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 mod binary_encoder;
 mod error;
 mod memory;
 pub mod numeric_encoder;
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 mod rocksdb;
+// Backend behind `rocksdb.rs`: the RocksDB FFI wrapper, or the pure-Rust
+// oxnative engine (which wins when both features are enabled).
 #[cfg(all(
     not(target_family = "wasm"),
-    feature = "rocksdb-cpp",
+    feature = "rocksdb",
     not(feature = "oxnative")
 ))]
 mod rocksdb_wrapper;
 #[cfg(all(not(target_family = "wasm"), feature = "oxnative"))]
 #[path = "oxnative_wrapper.rs"]
 mod rocksdb_wrapper;
-#[cfg(all(
-    not(target_family = "wasm"),
-    feature = "rocksdb",
-    not(any(feature = "rocksdb-cpp", feature = "oxnative"))
-))]
-compile_error!(
-    "The \"rocksdb\" feature needs a storage backend: enable \"rocksdb-cpp\" (RocksDB) or \"oxnative\" (pure Rust)"
-);
 pub mod small_string;
 
 pub const DEFAULT_BULK_LOAD_BATCH_SIZE: usize = 1_000_000;
 
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 #[derive(Clone, Copy, Debug, Default)]
 pub(crate) struct StorageOptions {
     max_open_files: Option<i32>,
     fd_reserve: Option<u32>,
 }
 
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 impl StorageOptions {
     pub(crate) fn new(max_open_files: Option<i32>, fd_reserve: Option<u32>) -> Self {
         Self {
@@ -73,7 +67,7 @@ pub struct Storage {
 
 #[derive(Clone)]
 enum StorageKind {
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     RocksDb(RocksDbStorage),
     Memory(MemoryStorage),
 }
@@ -86,14 +80,14 @@ impl Storage {
         })
     }
 
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     pub fn open(path: &Path) -> Result<Self, StorageError> {
         Ok(Self {
             kind: StorageKind::RocksDb(RocksDbStorage::open(path)?),
         })
     }
 
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     pub fn open_with_options(path: &Path, options: StorageOptions) -> Result<Self, StorageError> {
         Ok(Self {
             kind: StorageKind::RocksDb(RocksDbStorage::open_with_options(
@@ -106,7 +100,7 @@ impl Storage {
         })
     }
 
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     pub fn open_read_only(path: &Path) -> Result<Self, StorageError> {
         Ok(Self {
             kind: StorageKind::RocksDb(RocksDbStorage::open_read_only(path)?),
@@ -116,7 +110,7 @@ impl Storage {
     pub fn snapshot(&self) -> StorageReader<'static> {
         StorageReader {
             kind: match &self.kind {
-                #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+                #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
                 StorageKind::RocksDb(storage) => StorageReaderKind::RocksDb(storage.snapshot()),
                 StorageKind::Memory(storage) => StorageReaderKind::Memory(storage.snapshot()),
             },
@@ -124,13 +118,13 @@ impl Storage {
     }
 
     #[cfg_attr(
-        not(all(not(target_family = "wasm"), feature = "rocksdb")),
+        not(all(not(target_family = "wasm"), oxigraph_on_disk)),
         expect(clippy::unnecessary_wraps)
     )]
     pub fn start_transaction(&self) -> Result<StorageTransaction<'_>, StorageError> {
         Ok(StorageTransaction {
             kind: match &self.kind {
-                #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+                #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
                 StorageKind::RocksDb(storage) => {
                     StorageTransactionKind::RocksDb(storage.start_transaction()?)
                 }
@@ -142,7 +136,7 @@ impl Storage {
     }
 
     #[cfg_attr(
-        not(all(not(target_family = "wasm"), feature = "rocksdb")),
+        not(all(not(target_family = "wasm"), oxigraph_on_disk)),
         expect(clippy::unnecessary_wraps)
     )]
     pub fn start_readable_transaction(
@@ -150,7 +144,7 @@ impl Storage {
     ) -> Result<StorageReadableTransaction<'_>, StorageError> {
         Ok(StorageReadableTransaction {
             kind: match &self.kind {
-                #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+                #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
                 StorageKind::RocksDb(storage) => {
                     StorageReadableTransactionKind::RocksDb(storage.start_readable_transaction()?)
                 }
@@ -161,28 +155,28 @@ impl Storage {
         })
     }
 
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     pub fn flush(&self) -> Result<(), StorageError> {
         match &self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageKind::RocksDb(storage) => storage.flush(),
             StorageKind::Memory(_) => Ok(()),
         }
     }
 
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     pub fn compact(&self) -> Result<(), StorageError> {
         match &self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageKind::RocksDb(storage) => storage.compact(),
             StorageKind::Memory(_) => Ok(()),
         }
     }
 
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     pub fn backup(&self, target_directory: &Path) -> Result<(), StorageError> {
         match &self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageKind::RocksDb(storage) => storage.backup(target_directory),
             StorageKind::Memory(_) => Err(StorageError::Other(
                 "It is not possible to backup an in-memory database".into(),
@@ -192,7 +186,7 @@ impl Storage {
 
     pub fn bulk_loader(&self) -> StorageBulkLoader<'_> {
         match &self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageKind::RocksDb(storage) => StorageBulkLoader {
                 kind: StorageBulkLoaderKind::RocksDb(storage.bulk_loader()),
             },
@@ -211,19 +205,19 @@ pub struct StorageReader<'a> {
 
 #[derive(Clone)]
 enum StorageReaderKind<'a> {
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     RocksDb(RocksDbStorageReader<'a>),
     Memory(MemoryStorageReader<'a>),
 }
 
 #[cfg_attr(
-    not(all(not(target_family = "wasm"), feature = "rocksdb")),
+    not(all(not(target_family = "wasm"), oxigraph_on_disk)),
     expect(clippy::unnecessary_wraps)
 )]
 impl<'a> StorageReader<'a> {
     pub fn len(&self) -> Result<usize, StorageError> {
         match &self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReaderKind::RocksDb(reader) => reader.len(),
             StorageReaderKind::Memory(reader) => Ok(reader.len()),
         }
@@ -231,7 +225,7 @@ impl<'a> StorageReader<'a> {
 
     pub fn is_empty(&self) -> Result<bool, StorageError> {
         match &self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReaderKind::RocksDb(reader) => reader.is_empty(),
             StorageReaderKind::Memory(reader) => Ok(reader.is_empty()),
         }
@@ -239,7 +233,7 @@ impl<'a> StorageReader<'a> {
 
     pub fn contains(&self, quad: &EncodedQuad) -> Result<bool, StorageError> {
         match &self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReaderKind::RocksDb(reader) => reader.contains(quad),
             StorageReaderKind::Memory(reader) => Ok(reader.contains(quad)),
         }
@@ -254,7 +248,7 @@ impl<'a> StorageReader<'a> {
     ) -> DecodingQuadIterator<'a> {
         DecodingQuadIterator {
             kind: match &self.kind {
-                #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+                #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
                 StorageReaderKind::RocksDb(reader) => DecodingQuadIteratorKind::RocksDb(
                     reader.quads_for_pattern(subject, predicate, object, graph_name),
                 ),
@@ -273,7 +267,7 @@ impl<'a> StorageReader<'a> {
         graph_names: Option<&[Option<EncodedTerm>]>,
     ) -> Box<dyn Iterator<Item = Result<EncodedTriple, StorageError>> + 'a> {
         match &self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReaderKind::RocksDb(reader) => {
                 reader.triples_for_pattern(subject, predicate, object, graph_names)
             }
@@ -306,7 +300,7 @@ impl<'a> StorageReader<'a> {
     pub fn named_graphs(&self) -> DecodingGraphIterator<'a> {
         DecodingGraphIterator {
             kind: match &self.kind {
-                #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+                #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
                 StorageReaderKind::RocksDb(reader) => {
                     DecodingGraphIteratorKind::RocksDb(reader.named_graphs())
                 }
@@ -319,7 +313,7 @@ impl<'a> StorageReader<'a> {
 
     pub fn contains_named_graph(&self, graph_name: &EncodedTerm) -> Result<bool, StorageError> {
         match &self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReaderKind::RocksDb(reader) => reader.contains_named_graph(graph_name),
             StorageReaderKind::Memory(reader) => Ok(reader.contains_named_graph(graph_name)),
         }
@@ -327,7 +321,7 @@ impl<'a> StorageReader<'a> {
 
     pub fn contains_str(&self, key: &StrHash) -> Result<bool, StorageError> {
         match &self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReaderKind::RocksDb(reader) => reader.contains_str(key),
             StorageReaderKind::Memory(reader) => Ok(reader.contains_str(key)),
         }
@@ -336,7 +330,7 @@ impl<'a> StorageReader<'a> {
     /// Validate that all the storage invariants held in the data
     pub fn validate(&self) -> Result<(), StorageError> {
         match &self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReaderKind::RocksDb(reader) => reader.validate(),
             StorageReaderKind::Memory(reader) => reader.validate(),
         }
@@ -359,7 +353,7 @@ pub struct DecodingQuadIterator<'a> {
 }
 
 enum DecodingQuadIteratorKind<'a> {
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     RocksDb(RocksDbChainedDecodingQuadIterator<'a>),
     Memory(QuadIterator<'a>),
 }
@@ -369,7 +363,7 @@ impl Iterator for DecodingQuadIterator<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             DecodingQuadIteratorKind::RocksDb(iter) => iter.next(),
             DecodingQuadIteratorKind::Memory(iter) => iter.next().map(Ok),
         }
@@ -382,7 +376,7 @@ pub struct DecodingGraphIterator<'a> {
 }
 
 enum DecodingGraphIteratorKind<'a> {
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     RocksDb(RocksDbDecodingGraphIterator<'a>),
     Memory(MemoryDecodingGraphIterator<'a>),
 }
@@ -392,7 +386,7 @@ impl Iterator for DecodingGraphIterator<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             DecodingGraphIteratorKind::RocksDb(iter) => iter.next(),
             DecodingGraphIteratorKind::Memory(iter) => iter.next().map(Ok),
         }
@@ -402,7 +396,7 @@ impl Iterator for DecodingGraphIterator<'_> {
 impl StrLookup for StorageReader<'_> {
     fn get_str(&self, key: &StrHash) -> Result<Option<OxString>, StorageError> {
         match &self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReaderKind::RocksDb(reader) => reader.get_str(key),
             StorageReaderKind::Memory(reader) => reader.get_str(key),
         }
@@ -415,19 +409,19 @@ pub struct StorageTransaction<'a> {
 }
 
 enum StorageTransactionKind<'a> {
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     RocksDb(RocksDbStorageTransaction<'a>),
     Memory(MemoryStorageTransaction<'a>),
 }
 
 #[cfg_attr(
-    not(all(not(target_family = "wasm"), feature = "rocksdb")),
+    not(all(not(target_family = "wasm"), oxigraph_on_disk)),
     expect(clippy::unnecessary_wraps)
 )]
 impl StorageTransaction<'_> {
     pub fn insert(&mut self, quad: Quad) {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageTransactionKind::RocksDb(transaction) => transaction.insert(quad),
             StorageTransactionKind::Memory(transaction) => {
                 transaction.insert(quad);
@@ -437,7 +431,7 @@ impl StorageTransaction<'_> {
 
     pub fn insert_named_graph(&mut self, graph_name: NamedOrBlankNode) {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageTransactionKind::RocksDb(transaction) => {
                 transaction.insert_named_graph(graph_name)
             }
@@ -449,7 +443,7 @@ impl StorageTransaction<'_> {
 
     pub fn remove(&mut self, quad: &Quad) {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageTransactionKind::RocksDb(transaction) => transaction.remove(quad),
             StorageTransactionKind::Memory(transaction) => transaction.remove(quad),
         }
@@ -457,7 +451,7 @@ impl StorageTransaction<'_> {
 
     pub fn clear_default_graph(&mut self) {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageTransactionKind::RocksDb(transaction) => transaction.clear_default_graph(),
             StorageTransactionKind::Memory(transaction) => {
                 transaction.clear_graph(&GraphName::DefaultGraph)
@@ -467,7 +461,7 @@ impl StorageTransaction<'_> {
 
     pub fn clear_all_named_graphs(&mut self) {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageTransactionKind::RocksDb(transaction) => transaction.clear_all_named_graphs(),
             StorageTransactionKind::Memory(transaction) => transaction.clear_all_named_graphs(),
         }
@@ -475,7 +469,7 @@ impl StorageTransaction<'_> {
 
     pub fn clear_all_graphs(&mut self) {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageTransactionKind::RocksDb(transaction) => transaction.clear_all_graphs(),
             StorageTransactionKind::Memory(transaction) => transaction.clear_all_graphs(),
         }
@@ -483,7 +477,7 @@ impl StorageTransaction<'_> {
 
     pub fn remove_all_named_graphs(&mut self) {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageTransactionKind::RocksDb(transaction) => transaction.remove_all_named_graphs(),
             StorageTransactionKind::Memory(transaction) => transaction.remove_all_named_graphs(),
         }
@@ -491,7 +485,7 @@ impl StorageTransaction<'_> {
 
     pub fn clear(&mut self) {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageTransactionKind::RocksDb(transaction) => transaction.clear(),
             StorageTransactionKind::Memory(transaction) => transaction.clear(),
         }
@@ -499,7 +493,7 @@ impl StorageTransaction<'_> {
 
     pub fn commit(self) -> Result<(), StorageError> {
         match self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageTransactionKind::RocksDb(transaction) => transaction.commit(),
             StorageTransactionKind::Memory(transaction) => {
                 transaction.commit();
@@ -515,20 +509,20 @@ pub struct StorageReadableTransaction<'a> {
 }
 
 enum StorageReadableTransactionKind<'a> {
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     RocksDb(RocksDbStorageReadableTransaction<'a>),
     Memory(MemoryStorageTransaction<'a>),
 }
 
 #[cfg_attr(
-    not(all(not(target_family = "wasm"), feature = "rocksdb")),
+    not(all(not(target_family = "wasm"), oxigraph_on_disk)),
     expect(clippy::unnecessary_wraps)
 )]
 impl StorageReadableTransaction<'_> {
     pub fn reader(&self) -> StorageReader<'_> {
         StorageReader {
             kind: match &self.kind {
-                #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+                #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
                 StorageReadableTransactionKind::RocksDb(transaction) => {
                     StorageReaderKind::RocksDb(transaction.reader())
                 }
@@ -541,7 +535,7 @@ impl StorageReadableTransaction<'_> {
 
     pub fn insert(&mut self, quad: Quad) {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReadableTransactionKind::RocksDb(transaction) => transaction.insert(quad),
             StorageReadableTransactionKind::Memory(transaction) => {
                 transaction.insert(quad);
@@ -551,7 +545,7 @@ impl StorageReadableTransaction<'_> {
 
     pub fn insert_named_graph(&mut self, graph_name: NamedOrBlankNode) {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReadableTransactionKind::RocksDb(transaction) => {
                 transaction.insert_named_graph(graph_name)
             }
@@ -563,7 +557,7 @@ impl StorageReadableTransaction<'_> {
 
     pub fn remove(&mut self, quad: &Quad) {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReadableTransactionKind::RocksDb(transaction) => transaction.remove(quad),
             StorageReadableTransactionKind::Memory(transaction) => transaction.remove(quad),
         }
@@ -571,7 +565,7 @@ impl StorageReadableTransaction<'_> {
 
     pub fn clear_graph(&mut self, graph_name: &GraphName) -> Result<(), StorageError> {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReadableTransactionKind::RocksDb(transaction) => {
                 transaction.clear_graph(graph_name)
             }
@@ -584,7 +578,7 @@ impl StorageReadableTransaction<'_> {
 
     pub fn clear_all_named_graphs(&mut self) -> Result<(), StorageError> {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReadableTransactionKind::RocksDb(transaction) => {
                 transaction.clear_all_named_graphs()
             }
@@ -597,7 +591,7 @@ impl StorageReadableTransaction<'_> {
 
     pub fn clear_all_graphs(&mut self) -> Result<(), StorageError> {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReadableTransactionKind::RocksDb(transaction) => transaction.clear_all_graphs(),
             StorageReadableTransactionKind::Memory(transaction) => {
                 transaction.clear_all_graphs();
@@ -611,7 +605,7 @@ impl StorageReadableTransaction<'_> {
         graph_name: &NamedOrBlankNode,
     ) -> Result<(), StorageError> {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReadableTransactionKind::RocksDb(transaction) => {
                 transaction.remove_named_graph(graph_name)
             }
@@ -624,7 +618,7 @@ impl StorageReadableTransaction<'_> {
 
     pub fn remove_all_named_graphs(&mut self) -> Result<(), StorageError> {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReadableTransactionKind::RocksDb(transaction) => {
                 transaction.remove_all_named_graphs()
             }
@@ -637,7 +631,7 @@ impl StorageReadableTransaction<'_> {
 
     pub fn clear(&mut self) -> Result<(), StorageError> {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReadableTransactionKind::RocksDb(transaction) => transaction.clear(),
             StorageReadableTransactionKind::Memory(transaction) => {
                 transaction.clear();
@@ -648,7 +642,7 @@ impl StorageReadableTransaction<'_> {
 
     pub fn commit(self) -> Result<(), StorageError> {
         match self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageReadableTransactionKind::RocksDb(transaction) => transaction.commit(),
             StorageReadableTransactionKind::Memory(transaction) => {
                 transaction.commit();
@@ -664,7 +658,7 @@ pub struct StorageBulkLoader<'a> {
 }
 
 enum StorageBulkLoaderKind<'a> {
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     RocksDb(RocksDbStorageBulkLoader<'a>),
     Memory(MemoryStorageBulkLoader<'a>),
 }
@@ -672,7 +666,7 @@ enum StorageBulkLoaderKind<'a> {
 impl StorageBulkLoader<'_> {
     pub fn on_progress(self, callback: impl Fn(u64) + Send + Sync + 'static) -> Self {
         match self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageBulkLoaderKind::RocksDb(loader) => Self {
                 kind: StorageBulkLoaderKind::RocksDb(loader.on_progress(callback)),
             },
@@ -684,7 +678,7 @@ impl StorageBulkLoader<'_> {
 
     pub fn without_atomicity(self) -> Self {
         match self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageBulkLoaderKind::RocksDb(loader) => Self {
                 kind: StorageBulkLoaderKind::RocksDb(loader.without_atomicity()),
             },
@@ -695,7 +689,7 @@ impl StorageBulkLoader<'_> {
     }
 
     #[cfg_attr(
-        any(target_family = "wasm", not(feature = "rocksdb")),
+        any(target_family = "wasm", not(oxigraph_on_disk)),
         expect(clippy::unnecessary_wraps, unused_variables)
     )]
     pub fn load_batch(
@@ -704,7 +698,7 @@ impl StorageBulkLoader<'_> {
         max_num_threads: usize,
     ) -> Result<(), StorageError> {
         match &mut self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageBulkLoaderKind::RocksDb(loader) => loader.load_batch(quads, max_num_threads),
             StorageBulkLoaderKind::Memory(loader) => {
                 loader.load_batch(quads);
@@ -714,12 +708,12 @@ impl StorageBulkLoader<'_> {
     }
 
     #[cfg_attr(
-        any(target_family = "wasm", not(feature = "rocksdb")),
+        any(target_family = "wasm", not(oxigraph_on_disk)),
         expect(clippy::unnecessary_wraps)
     )]
     pub fn commit(self) -> Result<(), StorageError> {
         match self.kind {
-            #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+            #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
             StorageBulkLoaderKind::RocksDb(loader) => loader.commit(),
             StorageBulkLoaderKind::Memory(loader) => {
                 loader.commit();

@@ -4,45 +4,45 @@
 use oxigraph::io::RdfFormat;
 use oxigraph::model::vocab::{rdf, xsd};
 use oxigraph::model::*;
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 use oxigraph::sparql::{QueryResults, SparqlEvaluator};
 use oxigraph::store::Store;
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 use oxigraph::store::StoreOptions;
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 use std::collections::BTreeSet;
 use std::error::Error;
-#[cfg(all(target_os = "linux", feature = "rocksdb"))]
+#[cfg(all(target_os = "linux", oxigraph_on_disk))]
 use std::fs::remove_dir_all;
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 use std::fs::{File, create_dir_all, read_dir, remove_dir};
 #[cfg(all(
     target_os = "linux",
     target_pointer_width = "64",
     target_endian = "little",
-    feature = "rocksdb"
+    oxigraph_on_disk
 ))]
 use std::fs::{read, write};
 #[cfg(all(
     target_os = "linux",
     target_pointer_width = "64",
     target_endian = "little",
-    feature = "rocksdb"
+    oxigraph_on_disk
 ))]
 use std::io;
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 use std::io::Write;
 use std::iter::empty;
-#[cfg(all(target_os = "linux", feature = "rocksdb"))]
+#[cfg(all(target_os = "linux", oxigraph_on_disk))]
 use std::iter::once;
 #[cfg(all(
     target_os = "linux",
     target_pointer_width = "64",
     target_endian = "little",
-    feature = "rocksdb"
+    oxigraph_on_disk
 ))]
 use std::path::PathBuf;
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 use tempfile::TempDir;
 
 #[expect(clippy::non_ascii_literal)]
@@ -143,7 +143,7 @@ fn test_load_graph() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 fn test_load_graph_on_disk() -> Result<(), Box<dyn Error>> {
     let dir = TempDir::new()?;
     let store = Store::open(&dir)?;
@@ -156,7 +156,7 @@ fn test_load_graph_on_disk() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 fn test_merged_default_graph_on_disk() -> Result<(), Box<dyn Error>> {
     let dir = TempDir::new()?;
     let store = Store::open(&dir)?;
@@ -215,7 +215,7 @@ fn test_merged_default_graph_on_disk() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 fn test_load_graph_on_disk_with_options() -> Result<(), Box<dyn Error>> {
     let dir = TempDir::new()?;
     let store = Store::open_with_options(
@@ -246,7 +246,7 @@ fn test_bulk_load_graph() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 fn test_bulk_load_graph_on_disk() -> Result<(), Box<dyn Error>> {
     let dir = TempDir::new()?;
     let store = Store::open(&dir)?;
@@ -291,7 +291,7 @@ fn test_bulk_load_empty() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 #[test]
 fn test_bulk_load_rollback() -> Result<(), Box<dyn Error>> {
     let dir = TempDir::new()?;
@@ -405,7 +405,7 @@ fn test_snapshot_isolation_iterator() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 fn test_snapshot_isolation_iterator_on_disk() -> Result<(), Box<dyn Error>> {
     let quad = Quad::new(
         NamedNode::new("http://example.com/s")?,
@@ -441,7 +441,7 @@ fn test_bulk_load_on_existing_delete_overrides_the_delete() -> Result<(), Box<dy
 }
 
 #[test]
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 fn test_bulk_load_on_existing_delete_overrides_the_delete_on_disk() -> Result<(), Box<dyn Error>> {
     let quad = Quad::new(
         NamedNode::new_unchecked("http://example.com/s"),
@@ -460,7 +460,7 @@ fn test_bulk_load_on_existing_delete_overrides_the_delete_on_disk() -> Result<()
 }
 
 #[test]
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 fn test_open_bad_dir() -> Result<(), Box<dyn Error>> {
     let dir = TempDir::new()?;
     create_dir_all(&dir)?;
@@ -472,7 +472,7 @@ fn test_open_bad_dir() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[cfg(all(target_os = "linux", feature = "rocksdb"))]
+#[cfg(all(target_os = "linux", oxigraph_on_disk))]
 fn test_bad_stt_open() -> Result<(), Box<dyn Error>> {
     let dir = TempDir::new()?;
     let store = Store::open(&dir)?;
@@ -489,7 +489,7 @@ fn test_bad_stt_open() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 fn test_backup() -> Result<(), Box<dyn Error>> {
     let quad = Quad::new(
         NamedNode::new_unchecked("http://example.com/s"),
@@ -522,7 +522,7 @@ fn test_backup() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 fn test_bad_backup() -> Result<(), Box<dyn Error>> {
     let store_dir = TempDir::new()?;
     let backup_dir = TempDir::new()?;
@@ -533,7 +533,7 @@ fn test_bad_backup() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 fn test_backup_on_in_memory() -> Result<(), Box<dyn Error>> {
     let backup_dir = TempDir::new()?;
     Store::new()?.backup(&backup_dir).unwrap_err();
@@ -545,7 +545,7 @@ fn test_backup_on_in_memory() -> Result<(), Box<dyn Error>> {
     target_os = "linux",
     target_pointer_width = "64",
     target_endian = "little",
-    feature = "rocksdb"
+    oxigraph_on_disk
 ))]
 #[cfg_attr(
     feature = "oxnative",
@@ -578,7 +578,7 @@ fn test_backward_compatibility() -> Result<(), Box<dyn Error>> {
     target_os = "linux",
     target_pointer_width = "64",
     target_endian = "little",
-    feature = "rocksdb",
+    oxigraph_on_disk,
     feature = "rdf-12"
 ))]
 fn test_rdf_star_backward_compatibility() -> Result<(), Box<dyn Error>> {
@@ -629,7 +629,7 @@ fn test_rdf_star_backward_compatibility() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 fn test_read_only() -> Result<(), Box<dyn Error>> {
     let s = NamedNode::new_unchecked("http://example.com/s");
     let p = NamedNode::new_unchecked("http://example.com/p");
@@ -678,7 +678,7 @@ fn test_read_only() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 fn test_open_read_only_bad_dir() -> Result<(), Box<dyn Error>> {
     let dir = TempDir::new()?;
     create_dir_all(&dir)?;
@@ -690,7 +690,7 @@ fn test_open_read_only_bad_dir() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 fn test_read_your_own_write_transaction() -> Result<(), Box<dyn Error>> {
     let store_dir = TempDir::new()?;
 
@@ -713,7 +713,7 @@ fn test_read_your_own_write_transaction() -> Result<(), Box<dyn Error>> {
     target_os = "linux",
     target_pointer_width = "64",
     target_endian = "little",
-    feature = "rocksdb"
+    oxigraph_on_disk
 ))]
 struct DirSaver {
     path: PathBuf,
@@ -724,7 +724,7 @@ struct DirSaver {
     target_os = "linux",
     target_pointer_width = "64",
     target_endian = "little",
-    feature = "rocksdb"
+    oxigraph_on_disk
 ))]
 impl DirSaver {
     fn new(path: &str) -> io::Result<Self> {
@@ -745,7 +745,7 @@ impl DirSaver {
     target_os = "linux",
     target_pointer_width = "64",
     target_endian = "little",
-    feature = "rocksdb"
+    oxigraph_on_disk
 ))]
 impl Drop for DirSaver {
     fn drop(&mut self) {
