@@ -1881,7 +1881,7 @@ dependencies = [
 [[package]]
 name = "oxnative"
 version = "0.1.0-dev"
-source = "git+https://github.com/ds-labs-org/oxnative?branch=claude%2Frust-persistence-layer-7uk3u0#6fe72e1eb8bad0555eaccd0d94e2caff9e309d2e"
+source = "git+https://github.com/ds-labs-org/oxnative?branch=main#8abf9cdaa24f97286e3935349760f9ae0b5710ad"
 dependencies = [
  "fjall",
 ]

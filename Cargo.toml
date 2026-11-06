@@ -85,7 +85,7 @@ wasm-bindgen-futures = "0.4.71"
 wkt = "0.14"
 
 # Pure-Rust storage backend, maintained in its own repository
-oxnative = { git = "https://github.com/ds-labs-org/oxnative", branch = "claude/rust-persistence-layer-7uk3u0" }
+oxnative = { git = "https://github.com/ds-labs-org/oxnative", branch = "main" }
 
 # Internal dependencies
 oxigraph = { version = "=0.6.0-dev", path = "lib/oxigraph", default-features = false }
