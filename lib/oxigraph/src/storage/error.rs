@@ -51,7 +51,7 @@ impl CorruptionError {
     }
 
     #[inline]
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     pub(crate) fn from_missing_column_family_name(name: &'static str) -> Self {
         // TODO: eventually use a dedicated error enum value
         Self::msg(format!("Column family {name} does not exist"))
