@@ -14,6 +14,7 @@ ALLOWED_MISSING_PACKAGES = {
     "quick-xml",
     "getrandom",
     "rand",
+    "oxnative",  # optional pure-Rust storage backend, a git dependency
 }
 
 base_path = Path(__file__).parent.parent

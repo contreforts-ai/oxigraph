@@ -80,6 +80,8 @@ jobs:
         working-directory: ./lib/oxigraph
       - run: cargo clippy --all-targets --features rdf-12 -- -D warnings -D clippy::all
         working-directory: ./lib/oxigraph
+      - run: cargo clippy --all-targets --no-default-features --features oxnative -- -D warnings -D clippy::all
+        working-directory: ./lib/oxigraph
       - run: cargo clippy --all-targets -- -D warnings -D clippy::all
         working-directory: ./python
       - run: cargo clippy --all-targets --no-default-features -- -D warnings -D clippy::all
