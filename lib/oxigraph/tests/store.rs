@@ -523,6 +523,10 @@ fn test_backward_compatibility() -> Result<(), Box<dyn Error>> {
     oxigraph_on_disk,
     feature = "rdf-12"
 ))]
+#[cfg_attr(
+    feature = "oxnative",
+    ignore = "the fixture is in RocksDB's on-disk format"
+)]
 fn test_rdf_star_backward_compatibility() -> Result<(), Box<dyn Error>> {
     // We run twice to check if data is properly saved and closed
     let _reset = DirSaver::new("tests/rocksdb_bc_rdf_star_data")?;
