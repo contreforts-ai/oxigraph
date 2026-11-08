@@ -20,6 +20,7 @@ ALLOWED_MISSING_PACKAGES = {
     "chumsky",
     "logos",
     "js-sys",
+    "oxnative",  # optional pure-Rust storage backend, a git dependency
 }
 
 base_path = Path(__file__).parent.parent

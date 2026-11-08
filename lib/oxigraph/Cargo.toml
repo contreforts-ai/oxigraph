@@ -16,6 +16,10 @@ rust-version.workspace = true
 [features]
 default = ["rocksdb"]
 rocksdb = ["oxrocksdb-sys"]
+# Pure-Rust on-disk storage, in place of RocksDB. Takes precedence over
+# "rocksdb" when both are enabled. Either one enables on-disk storage
+# (`Store::open` and friends), see build.rs.
+oxnative = ["dep:oxnative"]
 js = ["getrandom/wasm_js", "oxsdatatypes/js", "js-sys"]
 http-client = ["oxhttp"]
 http-client-native-tls = ["http-client", "oxhttp/native-tls"]
@@ -50,6 +54,7 @@ url.workspace = true
 libc.workspace = true
 oxhttp = { workspace = true, optional = true }
 oxrocksdb-sys = { workspace = true, optional = true }
+oxnative = { workspace = true, optional = true }
 
 [target.'cfg(all(target_family = "wasm", target_os = "unknown"))'.dependencies]
 getrandom.workspace = true
