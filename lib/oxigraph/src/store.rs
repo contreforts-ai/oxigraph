@@ -34,7 +34,7 @@
 //! ```
 use crate::io::{RdfParseError, RdfParser, RdfSerializer};
 use crate::model::*;
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 use crate::storage::StorageOptions;
 #[cfg(not(target_family = "wasm"))]
 use crate::storage::map_thread_result;
@@ -104,21 +104,21 @@ pub struct Store {
 }
 
 /// Options used when opening an on-disk [`Store`].
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 #[derive(Clone, Debug, Default)]
 pub struct StoreOptions {
     max_open_files: Option<StoreMaxOpenFiles>,
     fd_reserve: Option<u32>,
 }
 
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum StoreMaxOpenFiles {
     Limited(u32),
     Unlimited,
 }
 
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 impl StoreOptions {
     /// Sets the maximum number of files that RocksDB keeps open.
     ///
@@ -147,7 +147,7 @@ impl StoreOptions {
     }
 }
 
-#[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+#[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
 impl From<StoreOptions> for StorageOptions {
     fn from(value: StoreOptions) -> Self {
         Self::new(
@@ -175,7 +175,7 @@ impl Store {
     /// Only one read-write [`Store`] can exist at the same time.
     /// If you want to have extra [`Store`] instance opened on the same data
     /// use [`Store::open_read_only`].
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     pub fn open(path: impl AsRef<Path>) -> Result<Self, StorageError> {
         Ok(Self {
             storage: Storage::open(path.as_ref())?,
@@ -189,7 +189,7 @@ impl Store {
     /// use [`Store::open_read_only`].
     ///
     /// Lower `max_open_files` values reduce open file descriptor usage but might increase read I/O and cache misses.
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     pub fn open_with_options(
         path: impl AsRef<Path>,
         options: StoreOptions,
@@ -202,7 +202,7 @@ impl Store {
     /// Opens a read-only [`Store`] from disk.
     ///
     /// Opening as read-only while having an other process writing the database is undefined behavior.
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     pub fn open_read_only(path: impl AsRef<Path>) -> Result<Self, StorageError> {
         Ok(Self {
             storage: Storage::open_read_only(path.as_ref())?,
@@ -787,7 +787,7 @@ impl Store {
     /// Flushes all buffers and ensures that all writes are saved on disk.
     ///
     /// Flushes are automatically done using background threads but might lag a little bit.
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     pub fn flush(&self) -> Result<(), StorageError> {
         self.storage.flush()
     }
@@ -797,7 +797,7 @@ impl Store {
     /// Useful to call after a batch upload or another similar operation.
     ///
     /// <div class="warning">Can take hours on huge databases.</div>
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     pub fn optimize(&self) -> Result<(), StorageError> {
         self.storage.compact()
     }
@@ -820,7 +820,7 @@ impl Store {
     /// This allows cheap regular backups.
     ///
     /// If you want to move your data to another RDF storage system, you should have a look at the [`Store::dump_to_writer`] function instead.
-    #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
+    #[cfg(all(not(target_family = "wasm"), oxigraph_on_disk))]
     pub fn backup(&self, target_directory: impl AsRef<Path>) -> Result<(), StorageError> {
         self.storage.backup(target_directory.as_ref())
     }
